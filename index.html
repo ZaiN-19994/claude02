@@ -253,7 +253,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>🔹${title.replace(/"/g, '\\"')}🔹</title>
+  <title>${title.replace(/"/g, '\\"')}</title>
   <script src="https://cdn.jwplayer.com/libraries/IDzF9Zmk.js"><\/script>
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"><\/script>
   <style>
@@ -293,7 +293,7 @@
     fetch("https://www.googleapis.com/blogger/v3/blogs/" + BLOG_ID + "/posts/", {
       method: "POST",
       headers: { "Authorization": "Bearer " + accessToken, "Content-Type": "application/json" },
-      body: JSON.stringify({ title: title, content: content })
+      body: JSON.stringify({ title: "🔹" + title + "🔹", content: content })
     })
     .then(r => r.json())
     .then(data => {
