@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🎬 نشر فيلم</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --card: #12121a;
+      --border: #1e1e2e;
+      --accent: #e50914;
+      --accent2: #ff6b35;
+      --text: #f0f0f0;
+      --muted: #666;
+      --input-bg: #0d0d14;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Cairo', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background-image:
+        radial-gradient(ellipse at 20% 50%, rgba(229,9,20,0.06) 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 20%, rgba(255,107,53,0.04) 0%, transparent 50%);
+    }
+    .container { width: 100%; max-width: 520px; }
+    .header { text-align: center; margin-bottom: 36px; animation: fadeDown 0.6s ease; }
+    .header .logo { font-size: 42px; margin-bottom: 8px; }
+    .header h1 {
+      font-size: 22px; font-weight: 900; letter-spacing: -0.5px;
+      background: linear-gradient(135deg, #fff 0%, #aaa 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .header p { font-size: 13px; color: var(--muted); margin-top: 6px; }
+    .card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 16px; padding: 32px;
+      animation: fadeUp 0.6s ease 0.1s both;
+    }
+    .field { margin-bottom: 20px; }
+    label { display: block; font-size: 13px; font-weight: 600; color: #aaa; margin-bottom: 8px; }
+    label span { color: var(--accent); }
+    input {
+      width: 100%; background: var(--input-bg); border: 1px solid var(--border);
+      border-radius: 10px; padding: 13px 16px; color: var(--text);
+      font-family: 'Cairo', sans-serif; font-size: 14px; outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s; direction: rtl;
+    }
+    input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(229,9,20,0.1); }
+    input::placeholder { color: #333; }
+    .preview {
+      display: none; margin-bottom: 20px; border-radius: 10px;
+      overflow: hidden; border: 1px solid var(--border);
+      aspect-ratio: 16/9; background: #000;
+    }
+    .preview img { width: 100%; height: 100%; object-fit: cover; opacity: 0.85; }
+    .auth-section { margin-bottom: 20px; }
+    #loginBtn {
+      width: 100%; padding: 13px; background: transparent;
+      border: 1px solid var(--border); border-radius: 10px; color: #aaa;
+      font-family: 'Cairo', sans-serif; font-size: 14px; font-weight: 600;
+      cursor: pointer; transition: all 0.2s;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    #loginBtn:hover { border-color: #4285f4; color: #4285f4; background: rgba(66,133,244,0.05); }
+    #loginBtn.logged { border-color: #22c55e; color: #22c55e; background: rgba(34,197,94,0.05); cursor: default; }
+    #publishBtn {
+      width: 100%; padding: 15px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border: none; border-radius: 10px; color: #fff;
+      font-family: 'Cairo', sans-serif; font-size: 16px; font-weight: 700;
+      cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden;
+    }
+    #publishBtn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 25px rgba(229,9,20,0.35); }
+    #publishBtn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    #publishBtn.loading::after {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+      animation: shimmer 1.2s infinite;
+    }
+    .result {
+      display: none; margin-top: 20px; padding: 16px;
+      background: rgba(34,197,94,0.08); border: 1px solid rgba(34,197,94,0.2);
+      border-radius: 10px; animation: fadeUp 0.4s ease;
+    }
+    .result p { font-size: 13px; color: #22c55e; margin-bottom: 10px; font-weight: 600; }
+    .result-link { display: flex; gap: 8px; }
+    .result-link input { background: rgba(0,0,0,0.3); border-color: rgba(34,197,94,0.2); font-size: 12px; padding: 10px 12px; direction: ltr; }
+    .copy-btn {
+      padding: 10px 16px; background: #22c55e; border: none; border-radius: 8px;
+      color: #000; font-family: 'Cairo', sans-serif; font-size: 13px; font-weight: 700;
+      cursor: pointer; white-space: nowrap; transition: all 0.2s; flex-shrink: 0;
+    }
+    .copy-btn:hover { background: #16a34a; }
+    .error {
+      display: none; margin-top: 16px; padding: 14px 16px;
+      background: rgba(229,9,20,0.08); border: 1px solid rgba(229,9,20,0.2);
+      border-radius: 10px; font-size: 13px; color: #f87171;
+    }
+    @keyframes fadeDown { from { opacity:0; transform:translateY(-20px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes fadeUp   { from { opacity:0; transform:translateY(20px);  } to { opacity:1; transform:translateY(0); } }
+    @keyframes shimmer  { from { transform:translateX(-100%); } to { transform:translateX(100%); } }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div class="logo">🎬</div>
+    <h1>نشر فيلم على بلوجر</h1>
+    <p>أدخل البيانات واضغط نشر — هتاخد الرابط فوراً</p>
+  </div>
+  <div class="card">
+
+    <div class="preview" id="posterPreview">
+      <img id="posterImg" src="" alt="بوستر">
+    </div>
+
+    <div class="field">
+      <label>🎞️ اسم الفيلم <span>*</span></label>
+      <input type="text" id="movieTitle" placeholder="مثال: الفيل الأزرق 2">
+    </div>
+    <div class="field">
+      <label>🖼️ رابط البوستر <span>*</span></label>
+      <input type="url" id="posterUrl" placeholder="https://...jpg">
+    </div>
+    <div class="field">
+      <label>▶️ رابط الفيديو <span>*</span></label>
+      <input type="url" id="streamUrl" placeholder="https://...m3u8">
+    </div>
+
+    <div class="auth-section">
+      <button id="loginBtn" onclick="doLogin()">
+        <svg width="18" height="18" viewBox="0 0 24 24">
+          <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+          <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+          <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+          <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+        </svg>
+        تسجيل الدخول بـ Google
+      </button>
+    </div>
+
+    <button id="publishBtn" onclick="publish()" disabled>
+      🚀 نشر الفيلم على بلوجر
+    </button>
+
+    <div class="result" id="result">
+      <p>✅ تم النشر بنجاح! اتفضل الرابط:</p>
+      <div class="result-link">
+        <input type="text" id="resultUrl" readonly>
+        <button class="copy-btn" onclick="copyLink()">نسخ</button>
+      </div>
+    </div>
+
+    <div class="error" id="errorBox"></div>
+  </div>
+</div>
+
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script>
+  var CLIENT_ID  = "632431284451-jfbq5f5ts90lkio34nt5p35f6plnn755.apps.googleusercontent.com";
+  var BLOG_ID    = "5055056580470574725";
+  var SCOPES     = "https://www.googleapis.com/auth/blogger";
+  var accessToken = null;
+  var tokenClient = null;
+
+  document.getElementById('posterUrl').addEventListener('input', function() {
+    var url = this.value.trim();
+    var preview = document.getElementById('posterPreview');
+    var img = document.getElementById('posterImg');
+    if (url) { img.src = url; preview.style.display = 'block'; }
+    else { preview.style.display = 'none'; }
+  });
+
+  window.onload = function() {
+    tokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: CLIENT_ID,
+      scope: SCOPES,
+      callback: function(resp) {
+        if (resp.error) { showError("فشل تسجيل الدخول: " + resp.error); return; }
+        accessToken = resp.access_token;
+        var btn = document.getElementById('loginBtn');
+        btn.innerHTML = '✅ تم تسجيل الدخول بنجاح';
+        btn.className = 'logged';
+        document.getElementById('publishBtn').disabled = false;
+      }
+    });
+  };
+
+  function doLogin() { tokenClient.requestAccessToken(); }
+
+  function publish() {
+    var title  = document.getElementById('movieTitle').value.trim();
+    var poster = document.getElementById('posterUrl').value.trim();
+    var stream = document.getElementById('streamUrl').value.trim();
+    hideError();
+    if (!title)  { showError("⚠️ اكتب اسم الفيلم"); return; }
+    if (!poster) { showError("⚠️ حط رابط البوستر"); return; }
+    if (!stream) { showError("⚠️ حط رابط الفيديو"); return; }
+    if (!accessToken) { showError("⚠️ سجّل الدخول الأول"); return; }
+
+    var btn = document.getElementById('publishBtn');
+    btn.disabled = true;
+    btn.classList.add('loading');
+    btn.textContent = '⏳ جاري النشر...';
+
+    var content = '<html><head>'
+      + '<script src="https://cdn.jwplayer.com/libraries/IDzF9Zmk.js"><\\/script>'
+      + '<style>*{margin:0;padding:0;box-sizing:border-box}html,body{width:100%;height:100%;background:#000;overflow:hidden}#player{width:100vw;height:100vh}<\/style>'
+      + '<\/head><body>'
+      + '<div id="player"><\/div>'
+      + '<script>'
+      + 'jwplayer("player").setup({'
+      + 'sources:[{file:"' + stream + '",label:"Auto"}],'
+      + 'image:"' + poster + '",'
+      + 'title:"' + title.replace(/"/g, '\\"') + '",'
+      + 'width:"100%",height:"100%",stretching:"exactfit",'
+      + 'preload:"auto",androidhls:true,hlshtml:true,primary:"html5",'
+      + 'startparam:"start",playbackRateControls:true,'
+      + 'playbackRates:[0.5,1,1.25,1.5,2],'
+      + 'tracks:[],cast:{},abouttext:"",sharing:{sites:[]}'
+      + '});'
+      + '<\\/script><\/body><\/html>';
+
+    fetch("https://www.googleapis.com/blogger/v3/blogs/" + BLOG_ID + "/posts/", {
+      method: "POST",
+      headers: {
+        "Authorization": "Bearer " + accessToken,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ title: title, content: content })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      btn.classList.remove('loading');
+      if (data.url) {
+        document.getElementById('resultUrl').value = data.url;
+        document.getElementById('result').style.display = 'block';
+        btn.textContent = '✅ تم النشر!';
+      } else {
+        btn.disabled = false;
+        btn.textContent = '🚀 نشر الفيلم على بلوجر';
+        showError("⚠️ " + (data.error ? data.error.message : "حصل خطأ، حاول تاني"));
+      }
+    })
+    .catch(function(err) {
+      btn.disabled = false;
+      btn.classList.remove('loading');
+      btn.textContent = '🚀 نشر الفيلم على بلوجر';
+      showError("⚠️ خطأ في الاتصال: " + err.message);
+    });
+  }
+
+  function copyLink() {
+    var input = document.getElementById('resultUrl');
+    input.select();
+    document.execCommand('copy');
+    var btn = document.querySelector('.copy-btn');
+    btn.textContent = '✔ تم النسخ';
+    setTimeout(function() { btn.textContent = 'نسخ'; }, 2000);
+  }
+
+  function showError(msg) {
+    var el = document.getElementById('errorBox');
+    el.textContent = msg;
+    el.style.display = 'block';
+  }
+
+  function hideError() {
+    document.getElementById('errorBox').style.display = 'none';
+  }
+</script>
+</body>
+</html>
