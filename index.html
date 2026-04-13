@@ -40,12 +40,12 @@
     .field { margin-bottom: 18px; }
     label { display: block; font-size: 13px; font-weight: 600; color: #aaa; margin-bottom: 8px; }
     label span { color: var(--accent); }
-    input, select {
+    input {
       width: 100%; background: var(--input-bg); border: 1px solid var(--border);
       border-radius: 10px; padding: 12px 14px; color: var(--text);
       font-family: 'Cairo', sans-serif; font-size: 14px; outline: none;
     }
-    input:focus, select:focus { border-color: var(--accent); }
+    input:focus { border-color: var(--accent); }
     input::placeholder { color: #333; }
     .preview {
       display: none; margin-bottom: 18px; border-radius: 10px;
@@ -68,7 +68,6 @@
     .mode-btn:first-child.active { background: linear-gradient(135deg, var(--accent), var(--accent2)); }
     .mode-btn:last-child.active { background: linear-gradient(135deg, var(--accent3), #1e3a8a); }
     .edit-section { display: none; }
-    .edit-section input { direction: ltr; font-family: monospace; font-size: 12px; }
     .btn-primary {
       width: 100%; padding: 14px; border: none; border-radius: 10px;
       font-family: 'Cairo', sans-serif; font-size: 16px; font-weight: 700;
@@ -95,8 +94,8 @@
       background: rgba(229,9,20,0.08); border: 1px solid rgba(229,9,20,0.2);
       border-radius: 10px; font-size: 13px; color: #f87171;
     }
-    hr { border-color: var(--border); margin: 18px 0; }
-    .note { font-size: 11px; color: var(--muted); margin-top: 16px; text-align: center; }
+    .note { font-size: 11px; color: var(--muted); margin-top: 6px; }
+    hr { margin: 20px 0; border-color: var(--border); }
   </style>
 </head>
 <body>
@@ -108,7 +107,6 @@
   </div>
   <div class="card">
 
-    <!-- اختيار الوضع -->
     <div class="mode-switch">
       <div class="mode-btn active" data-mode="publish">➕ نشر فيلم جديد</div>
       <div class="mode-btn" data-mode="edit">✏️ تعديل فيلم موجود</div>
@@ -121,7 +119,7 @@
       </div>
       <div class="field">
         <label>🎞️ اسم الفيلم <span>*</span></label>
-        <input type="text" id="movieTitle" placeholder="مثال: فيلم Thrash 2026 مترجم">
+        <input type="text" id="movieTitle" placeholder="مثال: فيلم Outcome 2026 مترجم">
       </div>
       <div class="field">
         <label>🖼️ رابط البوستر <span>*</span></label>
@@ -136,18 +134,18 @@
     <!-- قسم التعديل -->
     <div id="editSection" class="edit-section">
       <div class="field">
-        <label>🔗 رابط المنشور الحالي <span>*</span></label>
-        <input type="url" id="editPostUrl" placeholder="https://....blogspot.com/2026/04/film-name.html">
+        <label>🔗 رابط المنشور الموجود <span>*</span></label>
+        <input type="url" id="editPostUrl" placeholder="https://zainco3.blogspot.com/2026/04/outcome-2026.html">
         <div class="note">حط الرابط كامل من مدونتك</div>
       </div>
       <div class="field">
         <label>🔄 رابط التحويل الجديد <span>*</span></label>
         <input type="url" id="redirectUrl" placeholder="https://vipserver.liiivideo.com/embed-xxxxx.html">
-        <div class="note">هيحط الكود: meta refresh 4 ثواني للرابط ده</div>
+        <div class="note">هيحول المنشور لـ meta refresh للرابط ده</div>
       </div>
       <div class="field">
-        <label>🎬 اسم الفيلم (للعنوان)</label>
-        <input type="text" id="editTitle" placeholder="اسم الفيلم (اختياري)">
+        <label>🎬 اسم الفيلم (للعنوان - اختياري)</label>
+        <input type="text" id="editTitle" placeholder="اسم الفيلم">
       </div>
     </div>
 
@@ -185,7 +183,7 @@
   var SCOPES     = "https://www.googleapis.com/auth/blogger";
   var accessToken = null;
   var tokenClient = null;
-  var currentMode = "publish"; // publish or edit
+  var currentMode = "publish";
 
   // التبديل بين الوضعين
   document.querySelectorAll('.mode-btn').forEach(btn => {
@@ -235,7 +233,7 @@
 
   function doLogin() { tokenClient.requestAccessToken(); }
 
-  // نشر فيلم جديد (نفس الكود القديم)
+  // نشر فيلم جديد
   function publish() {
     var title  = document.getElementById('movieTitle').value.trim();
     var poster = document.getElementById('posterUrl').value.trim();
@@ -313,6 +311,40 @@
     .catch(err => { btn.disabled = false; btn.textContent = '🚀 نشر الفيلم الجديد'; showError("⚠️ " + err.message); });
   }
 
+  // استخراج Post ID من رابط المنشور
+  async function getPostIdFromUrl(postUrl) {
+    try {
+      // البحث عن المنشور باستخدام الرابط
+      let searchUrl = `https://www.googleapis.com/blogger/v3/blogs/${BLOG_ID}/posts/bypath?path=${encodeURIComponent(postUrl)}`;
+      let response = await fetch(searchUrl, {
+        headers: { "Authorization": "Bearer " + accessToken }
+      });
+      let data = await response.json();
+      if (data.id) {
+        return data.id;
+      } else {
+        // طريقة تانية: استخراج من الرابط مباشرة
+        let match = postUrl.match(/\/(\d{4})\/(\d{2})\/([^\/]+)\.html/);
+        if (match) {
+          let year = match[1];
+          let month = match[2];
+          let urlPath = match[3];
+          let searchByPath = await fetch(`https://www.googleapis.com/blogger/v3/blogs/${BLOG_ID}/posts?path=${urlPath}&year=${year}&month=${month}`, {
+            headers: { "Authorization": "Bearer " + accessToken }
+          });
+          let searchData = await searchByPath.json();
+          if (searchData.items && searchData.items[0]) {
+            return searchData.items[0].id;
+          }
+        }
+        return null;
+      }
+    } catch(e) {
+      console.log(e);
+      return null;
+    }
+  }
+
   // تعديل منشور موجود وتحويله لـ meta refresh
   async function updatePost() {
     var postUrl = document.getElementById('editPostUrl').value.trim();
@@ -324,23 +356,34 @@
     if (!redirectTo) { showError("⚠️ حط رابط التحويل الجديد"); return; }
     if (!accessToken) { showError("⚠️ سجّل الدخول الأول"); return; }
 
-    // استخراج post ID من الرابط
-    var postId = extractPostIdFromUrl(postUrl);
-    if (!postId) { showError("⚠️ الرابط مش صالح أو مش من مدونتك"); return; }
-
     var btn = document.getElementById('updateBtn');
     btn.disabled = true;
-    btn.textContent = '⏳ جاري التعديل...';
+    btn.textContent = '⏳ جاري البحث عن المنشور...';
 
-    // جلب المنشور الحالي عشان نجيب الاسم لو مش متغير
     try {
+      // استخراج Post ID من الرابط
+      showError("🔍 جاري البحث عن المنشور...");
+      var postId = await getPostIdFromUrl(postUrl);
+      
+      if (!postId) {
+        throw new Error("مش قادر أوصل لرقم المنشور. تأكد إن الرابط صحيح وإن المنشور موجود");
+      }
+      
+      btn.textContent = '⏳ جاري التعديل...';
+      
+      // جلب المنشور الحالي
       let getRes = await fetch(`https://www.googleapis.com/blogger/v3/blogs/${BLOG_ID}/posts/${postId}`, {
         headers: { "Authorization": "Bearer " + accessToken }
       });
       let postData = await getRes.json();
+      
+      if (postData.error) {
+        throw new Error(postData.error.message);
+      }
+      
       let finalTitle = newTitle || postData.title || "فيلم";
       
-      // الكود الجديد: مجرد تحويل (meta refresh)
+      // الكود الجديد: تحويل (meta refresh)
       var newContent = `<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -349,7 +392,7 @@
   <title>${finalTitle.replace(/"/g, '\\"')}</title>
   <meta http-equiv="refresh" content="4;url=${redirectTo.replace(/"/g, '\\"')}">
   <style>
-    body { background: #000; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; font-family: Arial; color: white; }
+    body { background: #000; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; font-family: 'Cairo', sans-serif; color: white; }
     .loading { text-align: center; }
     .spinner { width: 40px; height: 40px; border: 4px solid #333; border-top: 4px solid #e50914; border-radius: 50%; animation: spin 1s linear infinite; margin: 20px auto; }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -389,21 +432,6 @@
     }
   }
 
-  function extractPostIdFromUrl(url) {
-    // نماذج روابط بلوجر:
-    // https://....blogspot.com/2026/04/film-name.html
-    // https://....blogspot.com/post-id
-    var patterns = [
-      /\/post\/[^/]+\/(\d+)/,
-      /\/\d{4}\/\d{2}\/[^/]+\.html/,
-      /-(\d+)\.html/,
-      /postId=(\d+)/
-    ];
-    // طريقة أسهل: نجيبها من API البحث
-    return url; // هنخليها ترجع الرابط نفسه مؤقتاً، لكن هنستخدم fetch تاني
-  }
-
-  // نسخ الرابط
   function copyLink() {
     var input = document.getElementById('resultUrl');
     input.select();
@@ -418,6 +446,7 @@
     el.textContent = msg;
     el.style.display = 'block';
   }
+  
   function hideError() {
     document.getElementById('errorBox').style.display = 'none';
   }
